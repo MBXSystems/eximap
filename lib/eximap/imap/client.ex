@@ -4,6 +4,8 @@ defmodule Eximap.Imap.Client do
   alias Eximap.Imap.Response
   alias Eximap.Socket
 
+  require Logger
+
   @moduledoc """
   Imap Client GenServer
   """
@@ -60,10 +62,12 @@ defmodule Eximap.Imap.Client do
 
       {:ok, socket} ->
         # todo: parse the server attributes and store them in the state
-        imap_receive_raw(socket)
+        connect_resp = imap_receive_raw(socket)
+        Logger.info(connect_resp)
 
         req = Request.login(account, password) |> Request.add_tag("EX_LGN")
         resp = imap_send(socket, req)
+        Logger.info(resp)
         {:reply, resp, %{state | socket: socket}}
     end
   end
