@@ -67,7 +67,7 @@ defmodule Eximap.Imap.Client do
       {:ok, socket} ->
         # todo: parse the server attributes and store them in the state
         msg = imap_receive_raw(socket)
-        Logger.debug(fn -> "#{inspect msg}" end)
+        Logger.debug(fn -> "#{inspect(msg)}" end)
 
         req = Request.login(account, password) |> Request.add_tag("EX_LGN")
         # Do log login request, as it includes the password
@@ -97,8 +97,7 @@ defmodule Eximap.Imap.Client do
   defp compose_response(resp), do: resp
 
   defp build_opts(user_opts) do
-    allowed_opts =
-      user_opts |> Enum.reject(fn {k, _} -> k == :binary || k == :active end)
+    allowed_opts = user_opts |> Enum.reject(fn {k, _} -> k == :binary || k == :active end)
 
     [:binary, active: false] ++ allowed_opts
   end
@@ -110,7 +109,7 @@ defmodule Eximap.Imap.Client do
   end
 
   defp imap_send_raw(socket, msg, true = _log) do
-    Logger.debug(fn -> "#{inspect msg}" end)
+    Logger.debug(fn -> "#{inspect(msg)}" end)
     imap_send_raw(socket, msg, false)
   end
 
@@ -120,7 +119,7 @@ defmodule Eximap.Imap.Client do
 
   defp imap_receive(socket, req) do
     msg = assemble_msg(socket, req.tag)
-    Logger.debug(fn -> "#{inspect msg}" end)
+    Logger.debug(fn -> "#{inspect(msg)}" end)
     %Response{request: req} |> parse_message(msg)
   end
 
