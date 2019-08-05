@@ -8,7 +8,7 @@ defmodule Eximap.Imap.Client do
   Imap Client GenServer
   """
 
-  @initial_state %{socket: nil, tag_number: 1}
+  @initial_state %{socket: nil, tag_number: 1, conn_opts: nil}
   @literal ~r/{([0-9]*)}\r\n/s
 
   def start_link(opts \\ []) do
@@ -27,7 +27,7 @@ defmodule Eximap.Imap.Client do
       port: Keyword.get(opts, :port),
       account: Keyword.get(opts, :account),
       password: Keyword.get(opts, :password),
-      socket_options: Keyword.get(opts, :password, []) |> build_opts()
+      socket_options: Keyword.get(opts, :socket_options, []) |> build_opts()
     }
 
     {:ok, %{@initial_state | conn_opts: conn_opts}}
@@ -38,7 +38,7 @@ defmodule Eximap.Imap.Client do
   end
 
   def execute(pid, req) do
-    GenServer.call(pid, {:command, req}, @total_timeout)
+    GenServer.call(pid, {:command, req})
   end
 
   def handle_call(
@@ -59,6 +59,9 @@ defmodule Eximap.Imap.Client do
         {:reply, err, state}
 
       {:ok, socket} ->
+        # todo: parse the server attributes and store them in the state
+        imap_receive_raw(socket)
+
         req = Request.login(account, password) |> Request.add_tag("EX_LGN")
         resp = imap_send(socket, req)
         {:reply, resp, %{state | socket: socket}}
@@ -74,8 +77,7 @@ defmodule Eximap.Imap.Client do
     {:reply, resp, %{state | tag_number: tag_number + 1}}
   end
 
-  def handle_info(resp, state) do
-    IO.inspect(resp)
+  def handle_info(_resp, state) do
     {:noreply, state}
   end
 
@@ -84,7 +86,7 @@ defmodule Eximap.Imap.Client do
   #
   defp build_opts(user_opts) do
     allowed_opts =
-      :proplists.unfold(user_opts) |> Enum.reject(fn {k, _} -> k == :binary || k == :active end)
+      user_opts |> Enum.reject(fn {k, _} -> k == :binary || k == :active end)
 
     [:binary, active: false] ++ allowed_opts
   end

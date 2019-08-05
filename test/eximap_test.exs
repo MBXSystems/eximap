@@ -10,7 +10,15 @@ defmodule EximapTest do
   @large_mailbox_message_count 500
 
   setup_all do
-    {:ok, pid} = Client.start_link()
+    opts = [
+      host: Application.get_env(:eximap, :incoming_mail_server),
+      port: Application.get_env(:eximap, :incoming_port),
+      account: Application.get_env(:eximap, :account),
+      password: Application.get_env(:eximap, :password)
+    ]
+
+    {:ok, pid} = Client.start_link(opts)
+    Client.connect(pid)
     [pid: pid]
   end
 
