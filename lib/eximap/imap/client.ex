@@ -36,11 +36,15 @@ defmodule Eximap.Imap.Client do
   end
 
   def connect(pid) do
-    GenServer.call(pid, :connect)
+    pid
+    |> GenServer.call(:connect)
+    |> compose_response()
   end
 
   def execute(pid, req) do
-    GenServer.call(pid, {:command, req})
+    pid
+    |> GenServer.call({:command, req})
+    |> compose_response()
   end
 
   def handle_call(
@@ -62,12 +66,12 @@ defmodule Eximap.Imap.Client do
 
       {:ok, socket} ->
         # todo: parse the server attributes and store them in the state
-        connect_resp = imap_receive_raw(socket)
-        Logger.info(connect_resp)
+        msg = imap_receive_raw(socket)
+        Logger.debug(fn -> "#{inspect msg}" end)
 
         req = Request.login(account, password) |> Request.add_tag("EX_LGN")
-        resp = imap_send(socket, req)
-        Logger.info(resp)
+        # Do log login request, as it includes the password
+        resp = imap_send(socket, req, false)
         {:reply, resp, %{state | socket: socket}}
     end
   end
@@ -88,6 +92,10 @@ defmodule Eximap.Imap.Client do
   #
   # Private methods
   #
+  defp compose_response(%Response{status: "OK"} = resp), do: {:ok, resp}
+  defp compose_response(%Response{status: _} = resp), do: {:error, resp}
+  defp compose_response(resp), do: resp
+
   defp build_opts(user_opts) do
     allowed_opts =
       user_opts |> Enum.reject(fn {k, _} -> k == :binary || k == :active end)
@@ -95,20 +103,24 @@ defmodule Eximap.Imap.Client do
     [:binary, active: false] ++ allowed_opts
   end
 
-  defp imap_send(socket, req) do
+  defp imap_send(socket, req, log \\ true) do
     message = Request.raw(req)
-    imap_send_raw(socket, message)
+    imap_send_raw(socket, message, log)
     imap_receive(socket, req)
   end
 
-  defp imap_send_raw(socket, msg) do
-    # IO.inspect "C: #{msg}"
+  defp imap_send_raw(socket, msg, true = _log) do
+    Logger.debug(fn -> "#{inspect msg}" end)
+    imap_send_raw(socket, msg, false)
+  end
+
+  defp imap_send_raw(socket, msg, false = _log) do
     Socket.send(socket, msg)
   end
 
   defp imap_receive(socket, req) do
     msg = assemble_msg(socket, req.tag)
-    # IO.inspect("R: #{msg}")
+    Logger.debug(fn -> "#{inspect msg}" end)
     %Response{request: req} |> parse_message(msg)
   end
 
