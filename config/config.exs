@@ -26,14 +26,13 @@ config :eximap,
   password: "admin",
   use_ssl: true,
   incoming_mail_server: "localhost.dev",
-  incoming_port: 993, #TLS
-#  incoming_port: 143,
+  # TLS
+  incoming_port: 993,
+  #  incoming_port: 143,
 
   # unused for IMAP
   outgoing_mail_server: "localhost.dev",
   outgoing_port: 465
-
-
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment
@@ -41,4 +40,4 @@ config :eximap,
 # Configuration from the imported file will override the ones defined
 # here (which is why it is important to import them last).
 #
-import_config "#{Mix.env}.exs"
+import_config "#{Mix.env()}.exs"
