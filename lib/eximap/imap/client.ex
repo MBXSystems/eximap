@@ -35,15 +35,15 @@ defmodule Eximap.Imap.Client do
     {:ok, %{@initial_state | conn_opts: conn_opts}}
   end
 
-  def connect(pid) do
+  def connect(pid, timeout \\ 5_000) do
     pid
-    |> GenServer.call(:connect)
+    |> GenServer.call(:connect, timeout)
     |> compose_response()
   end
 
-  def execute(pid, req) do
+  def execute(pid, req, timeout \\ 5_000) do
     pid
-    |> GenServer.call({:command, req})
+    |> GenServer.call({:command, req}, timeout)
     |> compose_response()
   end
 
