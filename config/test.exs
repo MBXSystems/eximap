@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :eximap,
   account: "admin@127.0.0.1",
